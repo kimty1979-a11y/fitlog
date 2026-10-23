@@ -28,19 +28,43 @@ input[type="date"] {
 }
 .tabs { box-sizing: border-box; }
 
+
+/* v0.6 calendar */
+.tabs{gap:0}.tabs button{flex:1;min-width:0;font-size:11px;padding:8px 2px;white-space:nowrap}
+.calendar-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.calendar-head button{min-width:44px}.calendar-head strong{font-size:18px}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.weekday{text-align:center;color:#a9b5c0;font-size:12px;padding:8px 0}
+.calendar-day{width:100%;min-width:0;min-height:48px;background:#2b3640;color:#f4f6f7;padding:6px 0;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:13px}
+.calendar-day.selected{outline:2px solid #c1fa68;background:#384837}
+.calendar-day.has-workout .dot{background:#c1fa68;width:6px;height:6px;border-radius:50%}
+.calendar-day:not(.has-workout) .dot{width:6px;height:6px}
+.calendar-empty{min-height:48px}
+.stat-label{font-size:12px;color:#a9b5c0}.stat-value{font-size:19px;font-weight:800;color:#c1fa68;margin-top:5px;overflow-wrap:anywhere}
+.detail-row{padding:8px 0;border-bottom:1px solid #394550;line-height:1.55}
+.detail-row:last-child{border-bottom:0}
+.bar-track{height:9px;background:#35424c;border-radius:9px;overflow:hidden;margin-top:7px}
+.bar-fill{height:100%;background:#c1fa68;border-radius:9px}
+
 </style></head><body><header class="top"><div><div class="brand">FIT LOG</div><h1 id="pageTitle">오늘의 기록</h1></div><div>💪</div></header>
 <main>
 <section id="home"><label for="date">기록 날짜</label><input type="date" id="date"><div class="grid"><div class="card"><small>활동 칼로리</small><div class="metric" id="activeView">0 kcal</div></div><div class="card"><small>섭취 칼로리</small><div class="metric" id="foodView">0 kcal</div></div><div class="card"><small>유산소 거리</small><div class="metric" id="distanceView">0 km</div></div><div class="card"><small>단백질</small><div class="metric" id="proteinView">0 g</div></div></div><div class="card"><h2>오늘의 활동 직접 입력</h2><label>활동 칼로리 (kcal)</label><input type="number" id="active" min="0" step="1"><label>유산소 거리 (km)</label><input type="number" id="distance" min="0" step="0.01"><label>유산소 시간 (분)</label><input type="number" id="minutes" min="0" step="1"><label>하루 총소모 칼로리 (선택)</label><input type="number" id="total" min="0" step="1"><p class="note">활동 칼로리와 총소모 칼로리는 다른 값입니다. 총소모 칼로리를 모르면 비워 두세요.</p><button onclick="saveActivity()">활동 기록 저장</button></div><div class="card"><h2>오늘의 요약</h2><div id="summary"></div></div></section>
 <section id="workout" class="hidden"><div class="card"><h2>MY GYM · DRAX</h2><p class="note">등록한 장비만 운동 추천에 사용합니다.</p><div id="equipment"></div></div><div class="card"><h2>웨이트 루틴 추천</h2><label>운동 부위</label><select id="part"><option>전신</option><option>가슴</option><option>등</option><option>어깨</option><option>하체</option><option>팔</option></select><label>운동 강도</label><select id="intensity"><option value="light">가볍게</option><option value="normal" selected>보통</option><option value="hard">강하게</option></select><label>운동 시간</label><select id="duration"><option value="40">40분</option><option value="60" selected>60분</option><option value="80">80분</option></select><button onclick="recommend()">등록 장비로 루틴 만들기</button><div id="recommendations"></div></div><div class="card"><h2>운동 세션</h2><label>운동 시간 (분)</label><input type="number" id="sessionMinutes" min="0" step="1" placeholder="예: 55"><button onclick="saveSession()">운동 시간 저장</button><div id="sessionSummary" class="note"></div></div><div class="card"><h2>웨이트 운동 기록</h2><label>장비</label><select id="exercise" onchange="showPrevious()"></select><div id="previous" class="note"></div><div class="grid"><div><label>중량 (kg)</label><input id="weight" type="number" min="0" step="0.5"></div><div><label>횟수</label><input id="reps" type="number" min="1"></div><div><label>세트</label><input id="sets" type="number" min="1" value="3"></div></div><p><button onclick="addWorkout()">운동 기록 추가</button></p><div id="workoutList"></div></div></section>
+
+<section id="calendar" class="hidden">
+<div class="card"><h2>운동 캘린더</h2><div class="calendar-head"><button class="secondary" onclick="changeCalendarMonth(-1)" aria-label="이전 달">‹</button><strong id="calendarMonth"></strong><button class="secondary" onclick="changeCalendarMonth(1)" aria-label="다음 달">›</button></div><div class="calendar-grid" id="calendarGrid"></div><p class="note">초록 점은 운동 기록이 있는 날입니다. 날짜를 눌러 상세 기록을 확인하세요.</p></div>
+<div class="card"><h2 id="calendarDetailTitle">일별 기록</h2><div id="calendarDetail"></div></div>
+<div class="card"><h2>월간 종합 통계</h2><div class="grid" id="monthlyStats"></div><h2 style="margin-top:20px">주차별 운동 시간</h2><div id="weeklyBars"></div><p class="note">활동 칼로리는 직접 입력한 값만 합산하며, 웨이트 운동의 세트·볼륨과 별개입니다. 유산소 시간과 운동 세션 시간이 중복 기록될 수 있으므로 월간 운동 시간은 세션 시간이 있으면 세션 시간, 없으면 유산소 시간을 사용합니다.</p></div>
+</section>
 <section id="food" class="hidden"><div class="card"><h2>식단 기록</h2><label>음식 사진 (선택)</label><input type="file" id="photo" accept="image/*" capture="environment"><img id="photoPreview" class="preview hidden" alt="음식 사진 미리보기"><p class="note">이번 버전은 사진 첨부 및 직접 입력을 지원합니다. AI 자동 영양 분석은 아직 연결되지 않았습니다. 사진은 이 화면에서만 미리보기로 사용하고 저장하지 않습니다.</p><label>식사 구분</label><select id="meal"><option>아침</option><option>점심</option><option>저녁</option><option>간식</option></select><label>음식 이름</label><input id="foodName" placeholder="예: 닭가슴살 샐러드"><div class="grid"><div><label>열량 (kcal)</label><input id="calories" type="number" min="0"></div><div><label>단백질 (g)</label><input id="protein" type="number" min="0" step="0.1"></div></div><p><button onclick="addFood()">식단 저장</button></p><div id="foodList"></div></div></section>
 <section id="body" class="hidden"><div class="card"><h2>체성분 기록</h2><div class="grid"><div><label>체중 (kg)</label><input id="bodyWeight" type="number" min="0" step="0.1"></div><div><label>골격근량 (kg)</label><input id="muscle" type="number" min="0" step="0.1"></div><div><label>체지방률 (%)</label><input id="fat" type="number" min="0" max="100" step="0.1"></div></div><p><button onclick="saveBody()">체성분 저장</button></p><div id="bodyList"></div></div><div class="card"><h2>데이터 관리</h2><button onclick="exportData()">기록 JSON 내보내기 (선택)</button> <label>JSON 파일 복원 (선택)</label><input type="file" accept="application/json" onchange="importData(event)"><p class="note">기록은 이 브라우저의 로컬 저장소에 보관됩니다. 브라우저 데이터 삭제 또는 기기 변경 시 사라질 수 있으므로 백업하세요. 친구와 링크를 공유해도 기록은 자동 공유되지 않습니다.</p></div></section>
-</main><nav class="tabs"><button class="active" onclick="tab('home',this)">⌂ 홈</button><button onclick="tab('workout',this)">▤ 운동</button><button onclick="tab('food',this)">◉ 식단</button><button onclick="tab('body',this)">▥ 체성분</button></nav>
+</main><nav class="tabs"><button class="active" onclick="tab('home',this)">⌂ 홈</button><button onclick="tab('workout',this)">▤ 운동</button><button onclick="tab('calendar',this)">▦ 달력</button><button onclick="tab('food',this)">◉ 식단</button><button onclick="tab('body',this)">▥ 체성분</button></nav>
 <script>
 const equipment=[['체스트프레스 머신','가슴'],['숄더프레스 머신','어깨'],['팩덱플라이 머신','가슴'],['벤치프레스','가슴'],['덤벨 (3~25kg, 각 한 쌍)','전신'],['어시스티드 풀업/딥스','등'],['힙어브덕션','하체'],['레그익스텐션','하체'],['레그컬','하체'],['파워레그프레스','하체'],['시티드레그프레스','하체'],['플랫벤치','전신'],['틸팅벤치','전신'],['싯업벤치','복부'],['랫풀다운','등'],['시티드 로우','등'],['케이블머신 (로프 1, 바 1, 손잡이 2)','전신'],['스미스머신','전신'],['파워렉 + 바벨바','전신'],['EZ바','팔'],['바벨 원판 (2.5~20kg)','전신'],['트레드밀 (경사 조절, 6대)','유산소']];
 const $=id=>document.getElementById(id);let db;try{db=JSON.parse(localStorage.getItem('fitlog_v02'))||{}}catch{db={}};db.days ||= {};db.body ||= [];
 const today=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);$('date').value=today();const day=()=>{const d=$('date').value;return db.days[d] ||= {activity:{},food:[],workouts:[]}};
-const save=()=>{try{localStorage.setItem('fitlog_v02',JSON.stringify(db));render()}catch(e){alert('저장 공간이 부족하거나 저장이 차단되었습니다. 백업을 내려받으세요.')}};const num=id=>Math.max(0,Number($(id).value)||0);const safe=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function tab(id,btn){document.querySelectorAll('main section').forEach(e=>e.classList.add('hidden'));$(id).classList.remove('hidden');document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');$('pageTitle').textContent={home:'오늘의 기록',workout:'운동 관리',food:'식단 관리',body:'신체 변화'}[id];render()}
+const save=()=>{try{localStorage.setItem('fitlog_v02',JSON.stringify(db));render();renderCalendar()}catch(e){alert('저장 공간이 부족하거나 저장이 차단되었습니다. 백업을 내려받으세요.')}};const num=id=>Math.max(0,Number($(id).value)||0);const safe=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function tab(id,btn){document.querySelectorAll('main section').forEach(e=>e.classList.add('hidden'));$(id).classList.remove('hidden');document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');$('pageTitle').textContent={home:'오늘의 기록',workout:'운동 관리',calendar:'운동 캘린더',food:'식단 관리',body:'신체 변화'}[id];render();if(id==='calendar')renderCalendar()}
 function saveActivity(){day().activity={active:num('active'),distance:num('distance'),minutes:num('minutes'),total:$('total').value===''?null:num('total')};save()}
 function addWorkout(){const d=day();const reps=num('reps'),sets=num('sets');if(!reps||!sets)return alert('횟수와 세트를 입력하세요.');d.workouts.push({id:Date.now()+Math.random(),name:$('exercise').value,weight:num('weight'),reps,sets});save();showPrevious()}
 function saveSession(){day().sessionMinutes=num('sessionMinutes');save()}
@@ -61,8 +85,62 @@ function recommend(){const part=$('part').value,limit=Number($('duration').value
 function chooseExercise(key){const option=[...$('exercise').options].find(o=>o.value.includes(key));if(option){$('exercise').value=option.value;showPrevious();$('exercise').scrollIntoView({behavior:'smooth',block:'center'})}}
 function render(){const d=day(),a=d.activity||{},cal=d.food.reduce((s,x)=>s+x.calories,0),pro=d.food.reduce((s,x)=>s+x.protein,0);$('activeView').textContent=(a.active||0)+' kcal';$('distanceView').textContent=(a.distance||0)+' km';$('foodView').textContent=cal+' kcal';$('proteinView').textContent=pro.toFixed(1)+' g';['active','distance','minutes'].forEach(id=>$(id).value=a[id]??'');$('total').value=a.total??'';$('summary').innerHTML='<p>유산소 '+(a.minutes||0)+'분 · 웨이트 '+d.workouts.length+'건 · 식단 '+d.food.length+'건</p><p>'+(a.total==null?'총소모 칼로리 미입력':`추정 에너지 수지: ${cal-a.total>0?'+':''}${cal-a.total} kcal (섭취−총소모)`)+'</p>';
 $('sessionMinutes').value=d.sessionMinutes??'';const volume=d.workouts.reduce((s,x)=>s+x.weight*x.reps*x.sets,0),setCount=d.workouts.reduce((s,x)=>s+x.sets,0);$('sessionSummary').textContent=`총 ${d.workouts.length}종목 기록 · ${setCount}세트 · 총 볼륨 ${volume.toLocaleString('ko-KR')} kg · ${d.sessionMinutes||0}분`;showPrevious();$('workoutList').innerHTML=d.workouts.map(x=>`<div class="entry line"><span>${safe(x.name)}<br><small>${x.weight}kg × ${x.reps}회 × ${x.sets}세트</small></span><button class="secondary" onclick="del('workouts',${x.id})">삭제</button></div>`).join('');$('foodList').innerHTML=d.food.map(x=>`<div class="entry line"><span>${safe(x.meal)} · ${safe(x.name)}<br><small>${x.calories}kcal · 단백질 ${x.protein}g</small></span><button class="secondary" onclick="del('food',${x.id})">삭제</button></div>`).join('');$('bodyList').innerHTML=[...db.body].sort((a,b)=>b.date.localeCompare(a.date)).map(x=>`<div class="entry line"><span>${safe(x.date)} · ${x.weight}kg<br><small>골격근량 ${x.muscle}kg · 체지방 ${x.fat}%</small></span><button class="secondary" onclick="del('body',${x.id})">삭제</button></div>`).join('')}
+
+// v0.6 monthly calendar: reads existing fitlog_v02 records without migrating or overwriting them.
+let calendarYear=Number(today().slice(0,4)),calendarMonth=Number(today().slice(5,7))-1,selectedCalendarDate=today();
+const isoDate=(y,m,d)=>`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+const finite=v=>{const n=Number(v);return Number.isFinite(n)&&n>0?n:0};
+const dayData=date=>db.days[date]||{};
+const workoutDay=d=>Array.isArray(d.workouts)&&d.workouts.length>0||finite(d.sessionMinutes)>0||finite((d.activity||{}).minutes)>0||finite((d.activity||{}).distance)>0;
+const durationOf=d=>finite(d.sessionMinutes)||finite((d.activity||{}).minutes);
+const sumOf=(list,fn)=>list.reduce((sum,x)=>sum+fn(x),0);
+const numberText=n=>Math.round(n*10)/10;
+function changeCalendarMonth(delta){const t=new Date(calendarYear,calendarMonth+delta,1);calendarYear=t.getFullYear();calendarMonth=t.getMonth();selectedCalendarDate=isoDate(calendarYear,calendarMonth,1);renderCalendar()}
+function selectCalendarDate(date){selectedCalendarDate=date;renderCalendar()}
+function renderCalendar(){
+  if(!$('calendarGrid'))return;
+  $('calendarMonth').textContent=`${calendarYear}년 ${calendarMonth+1}월`;
+  const first=new Date(calendarYear,calendarMonth,1).getDay(),last=new Date(calendarYear,calendarMonth+1,0).getDate();
+  let html=['일','월','화','수','목','금','토'].map(w=>`<div class="weekday">${w}</div>`).join('');
+  for(let i=0;i<first;i++)html+='<div class="calendar-empty"></div>';
+  for(let i=1;i<=last;i++){
+    const date=isoDate(calendarYear,calendarMonth,i),worked=workoutDay(dayData(date));
+    html+=`<button type="button" class="calendar-day ${worked?'has-workout':''} ${selectedCalendarDate===date?'selected':''}" onclick="selectCalendarDate('${date}')" aria-label="${date}${worked?' 운동 기록 있음':''}" aria-pressed="${selectedCalendarDate===date}">${i}<span class="dot"></span></button>`;
+  }
+  $('calendarGrid').innerHTML=html;
+  const selected=dayData(selectedCalendarDate),activity=selected.activity||{},workouts=selected.workouts||[],foods=selected.food||[];
+  const sets=sumOf(workouts,x=>finite(x.sets)),volume=sumOf(workouts,x=>finite(x.weight)*finite(x.reps)*finite(x.sets));
+  const mealCal=sumOf(foods,x=>finite(x.calories)),protein=sumOf(foods,x=>finite(x.protein));
+  $('calendarDetailTitle').textContent=`${selectedCalendarDate} 기록`;
+  $('calendarDetail').innerHTML=`<div class="grid">
+  <div><div class="stat-label">활동 칼로리</div><div class="stat-value">${numberText(finite(activity.active))} kcal</div></div>
+  <div><div class="stat-label">유산소 거리</div><div class="stat-value">${numberText(finite(activity.distance))} km</div></div>
+  <div><div class="stat-label">운동 시간</div><div class="stat-value">${numberText(durationOf(selected))} 분</div></div>
+  <div><div class="stat-label">웨이트</div><div class="stat-value">${sets} 세트</div></div>
+  </div><p class="note">총 웨이트 볼륨 ${numberText(volume).toLocaleString('ko-KR')} kg · 식단 ${foods.length}건 · 섭취 ${numberText(mealCal)} kcal · 단백질 ${numberText(protein)} g</p>
+  ${workouts.length?workouts.map(x=>`<div class="detail-row">${safe(x.name)}<br><small>${finite(x.weight)}kg × ${finite(x.reps)}회 × ${finite(x.sets)}세트</small></div>`).join(''):'<p class="note">등록된 웨이트 운동이 없습니다.</p>'}
+  <button class="secondary" type="button" onclick="goToCalendarDate()">이 날짜 기록하기 / 수정하기</button>`;
+  const prefix=`${calendarYear}-${String(calendarMonth+1).padStart(2,'0')}-`;
+  const rows=Object.entries(db.days).filter(([date])=>date.startsWith(prefix));
+  const exerciseDays=rows.filter(([,d])=>workoutDay(d)).length;
+  const calories=sumOf(rows,([,d])=>finite((d.activity||{}).active));
+  const km=sumOf(rows,([,d])=>finite((d.activity||{}).distance));
+  const mins=sumOf(rows,([,d])=>durationOf(d));
+  const totalSets=sumOf(rows,([,d])=>sumOf(d.workouts||[],x=>finite(x.sets)));
+  const totalVolume=sumOf(rows,([,d])=>sumOf(d.workouts||[],x=>finite(x.weight)*finite(x.reps)*finite(x.sets)));
+  const foodCals=sumOf(rows,([,d])=>sumOf(d.food||[],x=>finite(x.calories)));
+  const monthDays=new Date(calendarYear,calendarMonth+1,0).getDate();
+  const stats=[['운동일',exerciseDays+'일'],['활동 칼로리',numberText(calories).toLocaleString('ko-KR')+' kcal'],['유산소 거리',numberText(km)+' km'],['운동 시간',numberText(mins)+' 분'],['웨이트 세트',totalSets+' 세트'],['웨이트 볼륨',numberText(totalVolume).toLocaleString('ko-KR')+' kg'],['식단 섭취 합계',numberText(foodCals).toLocaleString('ko-KR')+' kcal'],['운동 빈도',Math.round(exerciseDays/monthDays*100)+'%']];
+  $('monthlyStats').innerHTML=stats.map(([label,value])=>`<div><div class="stat-label">${label}</div><div class="stat-value">${value}</div></div>`).join('');
+  const weeks=Array.from({length:Math.ceil((first+monthDays)/7)},()=>0);
+  rows.forEach(([date,d])=>{const dayNum=Number(date.slice(-2));if(dayNum>=1&&dayNum<=monthDays)weeks[Math.floor((first+dayNum-1)/7)]+=durationOf(d)});
+  const max=Math.max(1,...weeks);
+  $('weeklyBars').innerHTML=weeks.map((v,i)=>`<div style="margin:10px 0"><div class="line"><small>${i+1}주차</small><small>${numberText(v)}분</small></div><div class="bar-track"><div class="bar-fill" style="width:${v/max*100}%"></div></div></div>`).join('');
+}
+function goToCalendarDate(){$('date').value=selectedCalendarDate;render();tab('workout',document.querySelectorAll('.tabs button')[1]);window.scrollTo({top:0,behavior:'smooth'})}
+
 function exportData(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='fitlog-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 async function importData(e){try{const obj=JSON.parse(await e.target.files[0].text());if(!obj.days||!Array.isArray(obj.body))throw Error('잘못된 파일');if(confirm('현재 기록을 백업 파일로 교체할까요?')){db=obj;save()}}catch{alert('올바른 FIT LOG 백업 파일이 아닙니다.')}}
-$('photo').addEventListener('change',e=>{const f=e.target.files[0],img=$('photoPreview');if(!f){img.classList.add('hidden');return}img.src=URL.createObjectURL(f);img.classList.remove('hidden')});$('date').addEventListener('change',render);$('equipment').innerHTML=equipment.map(([n,p])=>`<span class="pill">${safe(n)} · ${p}</span>`).join('');$('exercise').innerHTML=equipment.filter(x=>!['유산소','복부'].includes(x[1])).map(x=>`<option>${safe(x[0])}</option>`).join('');render();
+$('photo').addEventListener('change',e=>{const f=e.target.files[0],img=$('photoPreview');if(!f){img.classList.add('hidden');return}img.src=URL.createObjectURL(f);img.classList.remove('hidden')});$('date').addEventListener('change',render);$('equipment').innerHTML=equipment.map(([n,p])=>`<span class="pill">${safe(n)} · ${p}</span>`).join('');$('exercise').innerHTML=equipment.filter(x=>!['유산소','복부'].includes(x[1])).map(x=>`<option>${safe(x[0])}</option>`).join('');render();renderCalendar();
 
 if('serviceWorker' in navigator && location.protocol==='https:'){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(console.warn));}</script></body></html>
